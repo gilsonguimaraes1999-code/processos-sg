@@ -22,3 +22,8 @@ PASSO A PASSO RÁPIDO
 - Acesse: https://SEU-SITE.vercel.app/api/health
 - Depois: https://SEU-SITE.vercel.app/api/tutorials?lang=pt
 - Se aparecer JSON, a sincronização está funcionando.
+
+
+ALTERAÇÃO V3:
+- Botão Atualizar/Update/Actualizar agora respeita o idioma selecionado no momento e força atualização do idioma atual, sem voltar para Português.
+- Quando salvar URL manual do Apps Script pelo site, a alteração fica apenas no navegador atual. Para valer para todos, use APPS_SCRIPT_URL no Vercel e faça Redeploy.

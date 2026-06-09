@@ -33,3 +33,14 @@ Você pode subir o projeto de duas formas:
 - O Backend está configurado como **Vercel Serverless Functions** na pasta `/api`.
 - O Frontend é uma aplicação **Vite + React**.
 - Todas as rotas `/api/*` são roteadas automaticamente para o interpretador Node.js do Vercel.
+
+
+## Alteração V3 - idioma no botão Atualizar
+
+O botão Atualizar/Update/Actualizar agora força a atualização usando o idioma selecionado no momento.
+Exemplo: se estiver em EN, atualiza `/api/tutorials?lang=en`; se estiver em ES, atualiza `/api/tutorials?lang=es`.
+
+## URL do Apps Script
+
+A URL configurada pelo botão "Configurar Script" dentro do site fica salva apenas no navegador atual, via localStorage.
+Para valer para todos os usuários, configure a variável `APPS_SCRIPT_URL` no Vercel em Settings > Environment Variables e faça Redeploy.

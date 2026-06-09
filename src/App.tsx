@@ -313,7 +313,7 @@ export default function App() {
           <Header 
             lang={lang}
             setLang={setLang}
-            onUpdate={fetchData}
+            onUpdate={() => fetchData(lang, false)}
             searchTerm={searchTerm}
             setSearchTerm={setSearchTerm}
             isUpdating={isUpdating}
@@ -342,7 +342,7 @@ export default function App() {
                   
                   <div className="flex gap-3">
                     <button 
-                      onClick={() => fetchData()}
+                      onClick={() => fetchData(lang, false)}
                       className="px-4 py-2 bg-neon-yellow text-black text-[10px] font-bold uppercase tracking-widest rounded-lg hover:scale-105 transition-transform"
                     >
                       Tentar Novamente
@@ -377,7 +377,7 @@ export default function App() {
                           onClick={() => {
                             localStorage.setItem('manual_apps_script_url', manualScriptUrl);
                             setShowConfig(false);
-                            fetchData();
+                            fetchData(lang, false);
                           }}
                           className="px-4 py-2 bg-white/5 hover:bg-white/10 text-neon-yellow text-[9px] font-bold uppercase rounded-lg border border-white/10"
                         >

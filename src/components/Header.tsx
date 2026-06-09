@@ -89,7 +89,7 @@ export default function Header({
         </div>
 
         <button
-          onClick={onUpdate}
+          onClick={() => onUpdate()}
           disabled={isUpdating}
           className={`h-11 px-4 led-pulse rounded-lg bg-neon-yellow/10 text-neon-yellow font-bold text-[10px] uppercase tracking-widest flex items-center justify-center transition-all ${isUpdating ? 'opacity-50' : 'hover:scale-105 active:scale-95'}`}
         >
