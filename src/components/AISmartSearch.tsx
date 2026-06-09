@@ -29,7 +29,10 @@ export default function AISmartSearch({ lang, onTutorialClick, allTutorials }: A
     try {
       const response = await fetch('/api/ai-search', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(localStorage.getItem('portal_auth_token') ? { Authorization: `Bearer ${localStorage.getItem('portal_auth_token')}` } : {})
+        },
         body: JSON.stringify({ query, lang }),
       });
 

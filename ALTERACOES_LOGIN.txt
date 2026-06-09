@@ -1,0 +1,47 @@
+ALTERAÇÕES DO LOGIN POR PLANILHA - V7
+
+Arquivos alterados/criados:
+
+1. /APPS_SCRIPT.gs
+- Adicionado login por planilha.
+- O Apps Script agora aceita POST com action: "login".
+- Procura usuários na aba USUARIOS, USUÁRIOS, USERS, ACESSOS, CONTAS ou LOGIN.
+
+2. /api/login.ts
+- Nova rota do Vercel para validar usuário/senha no Apps Script.
+- Se a conta for válida, gera um token de sessão.
+
+3. /api/tutorials.ts
+- A API de tutoriais agora exige login.
+- Acesso direto sem login retorna 401 Login obrigatório.
+
+4. /api/ai-search.ts
+- IA Assistente agora também exige login.
+
+5. /src/App.tsx
+- Login agora valida conta real na planilha.
+- Usuário aleatório não consegue mais entrar.
+- O botão sair remove o token da sessão.
+
+6. /src/components/AISmartSearch.tsx
+- Envia o token de login para usar a IA Assistente.
+
+COMO CRIAR AS CONTAS NA PLANILHA:
+
+Crie uma aba chamada USUARIOS com as colunas:
+Usuario | Senha | Nome | Cargo | Ativo
+
+Exemplo:
+lu | 123456 | Lu | Master | SIM
+vendedor01 | abc123 | Vendedor 01 | Comercial | SIM
+bloqueado01 | teste | Bloqueado | Comercial | NÃO
+
+IMPORTANTE:
+Depois de atualizar o Apps Script, faça:
+Apps Script > Implantar > Gerenciar implantações > Editar > Nova versão > Implantar
+
+No Vercel, mantenha:
+APPS_SCRIPT_URL = URL do Apps Script terminando em /exec
+
+Opcional recomendado no Vercel:
+AUTH_SECRET = uma frase grande e secreta

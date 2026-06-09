@@ -1,4 +1,5 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
+import crypto from "node:crypto";
 import { GoogleGenAI, Type } from "@google/genai";
 
 const DEFAULT_APPS_SCRIPT_URL =
@@ -18,6 +19,45 @@ function cleanUrl(value?: string) {
     .replace(/\s/g, "")
     .trim();
 }
+
+function getAuthSecret() {
+  return (
+    process.env.AUTH_SECRET ||
+    process.env.APPS_SCRIPT_URL ||
+    "processos-comercial-auth-secret-v7-2026"
+  );
+}
+
+function parseAuthToken(token: string) {
+  try {
+    const [encodedPayload, signature] = String(token || "").split(".");
+    if (!encodedPayload || !signature) return null;
+
+    const expectedSignature = crypto
+      .createHmac("sha256", getAuthSecret())
+      .update(encodedPayload)
+      .digest("base64url");
+
+    const provided = Buffer.from(signature);
+    const expected = Buffer.from(expectedSignature);
+    if (provided.length !== expected.length || !crypto.timingSafeEqual(provided, expected)) return null;
+
+    const payload = JSON.parse(Buffer.from(encodedPayload, "base64url").toString("utf8"));
+    const now = Math.floor(Date.now() / 1000);
+    if (!payload?.sub || !payload?.exp || Number(payload.exp) < now) return null;
+
+    return payload;
+  } catch (_error) {
+    return null;
+  }
+}
+
+function getBearerToken(req: VercelRequest) {
+  const auth = String(req.headers.authorization || "");
+  const match = auth.match(/^Bearer\s+(.+)$/i);
+  return match ? match[1].trim() : "";
+}
+
 
 function normalize(value: unknown) {
   return String(value ?? "")
@@ -127,11 +167,16 @@ function getAI() {
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST,OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
   res.setHeader("Cache-Control", "no-store");
 
   if (req.method === "OPTIONS") return res.status(204).end();
   if (req.method !== "POST") return res.status(405).json({ error: "Método não permitido" });
+
+  const session = parseAuthToken(getBearerToken(req));
+  if (!session) {
+    return res.status(401).json({ error: "Login obrigatório", details: "Faça login para usar a IA assistente." });
+  }
 
   const { query, lang = "pt" } = req.body || {};
   if (!query) return res.status(400).json({ error: "Query is required" });

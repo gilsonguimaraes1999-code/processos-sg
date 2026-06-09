@@ -1,0 +1,25 @@
+INSTRUÇÕES DO LOGIN POR PLANILHA
+
+1. Crie uma aba na mesma planilha chamada:
+USUARIOS
+
+2. Na primeira linha da aba USUARIOS, coloque exatamente:
+Usuario | Senha | Nome | Cargo | Ativo
+
+3. Exemplo:
+Usuario      Senha     Nome        Cargo       Ativo
+lu           123456    Lu          Master      SIM
+vendedor01   abc123    Vendedor 01 Comercial   SIM
+bloqueado01  teste     Bloqueado   Comercial   NÃO
+
+4. Status bloqueados aceitos:
+NÃO, NAO, INATIVO, BLOQUEADO, FALSE, 0, OFF, DESATIVADO, BANIDO, SUSPENSO
+
+5. Depois de colar o novo APPS_SCRIPT.gs:
+Apps Script > Implantar > Gerenciar implantações > Editar > Nova versão > Implantar
+
+6. No Vercel, mantenha a variável:
+APPS_SCRIPT_URL = URL do Apps Script terminando em /exec
+
+Opcional recomendado:
+AUTH_SECRET = qualquer texto grande e secreto, por exemplo: portal-sg-2026-chave-login-secreta

@@ -16,7 +16,8 @@ import AISmartSearch from './components/AISmartSearch';
 export default function App() {
   const [showLanding, setShowLanding] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [currentUser, setCurrentUser] = useState<string | null>(null);
+  const [currentUser, setCurrentUser] = useState<string | null>(() => localStorage.getItem('portal_current_user'));
+  const [authToken, setAuthToken] = useState<string>(() => localStorage.getItem('portal_auth_token') || '');
   const [loginLoading, setLoginLoading] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
   const [lang, setLang] = useState<Language>('pt');
@@ -53,7 +54,7 @@ export default function App() {
     }, 100);
   };
 
-  const fetchData = async (currentLang: Language = lang, useCache: boolean = true) => {
+  const fetchData = async (currentLang: Language = lang, useCache: boolean = true, tokenOverride?: string) => {
     if (useCache && cache[currentLang]) {
       setTutorials(cache[currentLang].tutorials);
       setCities(cache[currentLang].cities);
@@ -79,6 +80,8 @@ export default function App() {
         'pragma': 'no-cache',
         'x-revalidate-force': 'true' 
       };
+      const activeToken = tokenOverride || authToken || localStorage.getItem('portal_auth_token') || '';
+      if (activeToken) headers['Authorization'] = `Bearer ${activeToken}`;
       if (manualScriptUrl) headers['x-manual-script-url'] = manualScriptUrl;
 
       // Adicionando timestamp para furar cache do navegador e Vercel Edge
@@ -114,6 +117,14 @@ export default function App() {
         let errorMsg = `Erro HTTP ${response.status}`;
         try {
           const errData = await response.json();
+          if (response.status === 401) {
+            localStorage.removeItem('portal_auth_token');
+            localStorage.removeItem('portal_current_user');
+            setAuthToken('');
+            setCurrentUser(null);
+            setIsAuthenticated(false);
+            setShowLanding(true);
+          }
           errorMsg = errData.details || errData.error || errorMsg;
           console.error("[Diagnostic] Detalhes do erro retornados pelo backend:", errData);
         } catch (e) {
@@ -166,8 +177,13 @@ export default function App() {
   };
 
   useEffect(() => {
+    if (!isAuthenticated) {
+      setIsLoading(false);
+      return;
+    }
+
     fetchData(lang).catch(() => {}); // Catch silent for standard effect
-  }, [lang]);
+  }, [lang, isAuthenticated]);
 
   useEffect(() => {
     document.documentElement.classList.add('dark');
@@ -199,7 +215,7 @@ export default function App() {
     });
   }, [tutorials, searchTerm, selectedCategory]);
 
-  const preloadAllData = async () => {
+  const preloadAllData = async (tokenOverride?: string) => {
     setIsPreloading(true);
     setPreloadProgress(0);
     setLanguagesProcessed([]);
@@ -214,7 +230,7 @@ export default function App() {
         setCurrentPreloadTask(`Sincronizando: ${currentLang.toUpperCase()}`);
         
         try {
-          const data = await fetchData(currentLang, false);
+          const data = await fetchData(currentLang, false, tokenOverride);
           if (data) loadedData[currentLang] = data;
           setLanguagesProcessed(prev => [...prev, currentLang]);
         } catch (err) {
@@ -258,13 +274,37 @@ export default function App() {
     setLoginError(null);
 
     try {
-      // Store current user for role-based features
-      setCurrentUser(username.toLowerCase());
+      const response = await fetch('/api/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(manualScriptUrl ? { 'x-manual-script-url': manualScriptUrl } : {})
+        },
+        body: JSON.stringify({ username, password })
+      });
+
+      let result: any = null;
+      try {
+        result = await response.json();
+      } catch (parseError) {
+        throw new Error('O servidor não respondeu em JSON.');
+      }
+
+      if (!response.ok || !result?.ok || !result?.token) {
+        throw new Error(result?.details || result?.error || 'Usuário ou senha inválidos.');
+      }
+
+      const normalizedUser = result?.user?.name || result?.user?.username || username.toLowerCase();
+
+      localStorage.setItem('portal_auth_token', result.token);
+      localStorage.setItem('portal_current_user', normalizedUser);
+      setAuthToken(result.token);
+      setCurrentUser(normalizedUser);
       
       // Whitelist/Preload sequence starts here
-      await preloadAllData();
-    } catch (err) {
-      setLoginError('Erro de conexão com o portal.');
+      await preloadAllData(result.token);
+    } catch (err: any) {
+      setLoginError(err?.message || 'Usuário ou senha inválidos.');
     } finally {
       setLoginLoading(false);
     }
@@ -273,6 +313,10 @@ export default function App() {
   const handleLogout = () => {
     setIsAuthenticated(false);
     setCurrentUser(null);
+    setAuthToken('');
+    localStorage.removeItem('portal_auth_token');
+    localStorage.removeItem('portal_current_user');
+    setCache({});
     setShowLanding(true);
     // Optional: Clear any session items if needed
   };
