@@ -13,6 +13,61 @@ import { Tutorial, Language, translations, City, ApiResponse } from './types';
 import { motion, AnimatePresence } from 'motion/react';
 import AISmartSearch from './components/AISmartSearch';
 
+const SITE_CACHE_VERSION = 'v8-site-cache-2026-06-09-hide-empty-v2';
+const SITE_CACHE_PREFIX = 'processos_comercial_cache_';
+const SITE_CACHE_TTL_MS = 1000 * 60 * 60 * 12; // 12 horas
+
+type StoredApiCache = {
+  version: string;
+  timestamp: number;
+  data: ApiResponse;
+};
+
+const getCacheKey = (langId: string) => `${SITE_CACHE_PREFIX}${SITE_CACHE_VERSION}_${langId}`;
+
+const isValidApiResponse = (data: unknown): data is ApiResponse => {
+  const value = data as ApiResponse | null;
+  return Boolean(value && Array.isArray(value.tutorials) && Array.isArray(value.cities));
+};
+
+const readPersistentCache = (langId: string, allowExpired: boolean = false): ApiResponse | null => {
+  if (typeof window === 'undefined') return null;
+
+  try {
+    const raw = localStorage.getItem(getCacheKey(langId));
+    if (!raw) return null;
+
+    const parsed = JSON.parse(raw) as StoredApiCache;
+    const isFresh = Date.now() - Number(parsed.timestamp || 0) < SITE_CACHE_TTL_MS;
+
+    if (parsed.version !== SITE_CACHE_VERSION) return null;
+    if (!allowExpired && !isFresh) return null;
+    if (!isValidApiResponse(parsed.data)) return null;
+
+    return parsed.data;
+  } catch {
+    localStorage.removeItem(getCacheKey(langId));
+    return null;
+  }
+};
+
+const writePersistentCache = (langId: string, data: ApiResponse) => {
+  if (typeof window === 'undefined' || !isValidApiResponse(data)) return;
+
+  try {
+    const payload: StoredApiCache = {
+      version: SITE_CACHE_VERSION,
+      timestamp: Date.now(),
+      data
+    };
+
+    localStorage.setItem(getCacheKey(langId), JSON.stringify(payload));
+  } catch (error) {
+    console.warn('[Cache] Não foi possível salvar o cache local:', error);
+  }
+};
+
+
 export default function App() {
   const [showLanding, setShowLanding] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -65,11 +120,27 @@ export default function App() {
   };
 
   const fetchData = async (currentLang: Language = lang, useCache: boolean = true, tokenOverride?: string, ownerOverride?: boolean) => {
-    if (useCache && cache[currentLang]) {
-      setTutorials(cache[currentLang].tutorials);
-      setCities(cache[currentLang].cities);
-      setIsLoading(false);
-      return;
+    const langId = typeof currentLang === 'string' ? currentLang : (currentLang as any).id || 'pt';
+
+    if (useCache) {
+      const memoryCached = cache[langId];
+      if (memoryCached) {
+        setTutorials(memoryCached.tutorials);
+        setCities(memoryCached.cities);
+        setIsLoading(false);
+        setFetchError(null);
+        return memoryCached;
+      }
+
+      const persistentCached = readPersistentCache(langId);
+      if (persistentCached) {
+        setCache(prev => ({ ...prev, [langId]: persistentCached }));
+        setTutorials(persistentCached.tutorials);
+        setCities(persistentCached.cities);
+        setIsLoading(false);
+        setFetchError(null);
+        return persistentCached;
+      }
     }
 
     setIsUpdating(true);
@@ -81,8 +152,6 @@ export default function App() {
     try {
       setFetchError(null);
       const startTime = performance.now();
-      const langId = typeof currentLang === 'string' ? currentLang : (currentLang as any).id || 'pt';
-      
       console.log(`[Diagnostic] Iniciando fetch para lang: ${langId} em ${new Date().toISOString()}`);
       
       const headers: Record<string, string> = { 
@@ -163,6 +232,7 @@ export default function App() {
       setTutorials(parsedData.tutorials);
       setCities(parsedData.cities);
       setCache(prev => ({ ...prev, [langId]: parsedData }));
+      writePersistentCache(langId, parsedData);
       
       if ((ownerOverride ?? isOwner) && manualScriptUrl) localStorage.setItem('manual_apps_script_url', manualScriptUrl);
 
@@ -177,6 +247,23 @@ export default function App() {
         status: prev.status === 'Pendente...' ? 'Falha de Rede/Timeout' : prev.status,
         error: error.message
       } : null);
+
+      if (!localStorage.getItem('portal_auth_token')) {
+        setFetchError(msg);
+        console.error('[Diagnostic] Falha Crítica de Sincronização:', error);
+        throw error;
+      }
+
+      const staleCached = readPersistentCache(langId, true);
+      if (staleCached) {
+        console.warn('[Cache] Usando cache local expirado como fallback após falha de sincronização.');
+        setCache(prev => ({ ...prev, [langId]: staleCached }));
+        setTutorials(staleCached.tutorials);
+        setCities(staleCached.cities);
+        setFetchError(null);
+        setIsLoading(false);
+        return staleCached;
+      }
 
       setFetchError(msg);
       console.error('[Diagnostic] Falha Crítica de Sincronização:', error);
@@ -241,7 +328,7 @@ export default function App() {
         setCurrentPreloadTask(`Sincronizando: ${currentLang.toUpperCase()}`);
         
         try {
-          const data = await fetchData(currentLang, false, tokenOverride, ownerOverride);
+          const data = await fetchData(currentLang, true, tokenOverride, ownerOverride);
           if (data) loadedData[currentLang] = data;
           setLanguagesProcessed(prev => [...prev, currentLang]);
         } catch (err) {

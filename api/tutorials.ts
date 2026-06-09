@@ -225,28 +225,27 @@ function mapTutorials(rawItems: unknown[]): TutorialRecord[] {
         objective: cleanText(
           findKey(item, ["objective", "objetivo", "finalidade", "resumo", "description", "descrição", "descricao"])
         ),
-        steps:
-          cleanText(
-            findKey(item, [
-              "steps",
-              "passos",
-              "conteudo",
-              "conteúdo",
-              "content",
-              "descrição / passo a passo completo",
-              "descricao / passo a passo completo",
-              "passo a passo",
-              "passo-a-passo",
-              "completo",
-              "tutorial",
-              "corpo",
-              "resposta",
-              "explicação",
-              "explicacao",
-              "como fazer",
-              "manual",
-            ])
-          ) || "Nenhum conteúdo disponível.",
+        steps: cleanText(
+          findKey(item, [
+            "steps",
+            "passos",
+            "conteudo",
+            "conteúdo",
+            "content",
+            "descrição / passo a passo completo",
+            "descricao / passo a passo completo",
+            "passo a passo",
+            "passo-a-passo",
+            "completo",
+            "tutorial",
+            "corpo",
+            "resposta",
+            "explicação",
+            "explicacao",
+            "como fazer",
+            "manual",
+          ])
+        ),
       };
     });
 }

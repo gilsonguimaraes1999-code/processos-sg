@@ -19,6 +19,39 @@ export default function TutorialCard({ tutorial, lang }: TutorialCardProps) {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const t = translations[lang];
 
+  const normalizeDisplayText = (value: unknown) => String(value ?? '')
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, ' ');
+
+  const hasFilledContent = (value: unknown) => {
+    const normalized = normalizeDisplayText(value);
+
+    if (!normalized) return false;
+
+    const emptyPlaceholders = new Set([
+      'nenhum conteudo disponivel',
+      'nenhum conteudo disponivel.',
+      'no content available',
+      'no content available.',
+      'sin contenido disponible',
+      'sin contenido disponible.',
+      'sem conteudo',
+      'sem conteudo.',
+      '-',
+      '.',
+    ]);
+
+    return !emptyPlaceholders.has(normalized);
+  };
+
+  const primaryQuestion = hasFilledContent(tutorial.primaryQuestion) ? tutorial.primaryQuestion : '';
+  const objective = hasFilledContent(tutorial.objective) ? tutorial.objective : '';
+  const steps = hasFilledContent(tutorial.steps) ? tutorial.steps : '';
+  const categoryLabel = [tutorial.category, tutorial.subcategory].filter(hasFilledContent).join(' • ');
+
   const renderSteps = (text: string) => {
     if (!text) return null;
 
@@ -249,17 +282,21 @@ export default function TutorialCard({ tutorial, lang }: TutorialCardProps) {
         <div className="p-6">
           <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
             <div className="flex-1">
-              <span className={`text-[10px] font-bold uppercase tracking-[0.15em] mb-2 block ${(tutorial.category || '').toLowerCase().includes('design') ? 'text-neon-purple' : 'text-neon-yellow'}`}>
-                {tutorial.category} • {tutorial.subcategory}
-              </span>
+              {categoryLabel && (
+                <span className={`text-[10px] font-bold uppercase tracking-[0.15em] mb-2 block ${(tutorial.category || '').toLowerCase().includes('design') ? 'text-neon-purple' : 'text-neon-yellow'}`}>
+                  {categoryLabel}
+                </span>
+              )}
               
               <h3 className="text-xl font-bold group-hover:text-slate-900 dark:group-hover:text-white transition-colors mb-2 uppercase tracking-wide">
                 {tutorial.title}
               </h3>
               
-              <p className="text-slate-400 text-xs line-clamp-2">
-                {tutorial.primaryQuestion}
-              </p>
+              {primaryQuestion && (
+                <p className="text-slate-400 text-xs line-clamp-2">
+                  {primaryQuestion}
+                </p>
+              )}
             </div>
 
             <div className="shrink-0 h-10 w-10 flex items-center justify-center rounded-lg glass text-slate-500 group-hover:text-neon-yellow group-hover:border-neon-yellow transition-all">
@@ -304,9 +341,11 @@ export default function TutorialCard({ tutorial, lang }: TutorialCardProps) {
                 </button>
 
                 <div className="flex items-center space-x-4">
-                  <span className={`text-[10px] font-bold uppercase tracking-[0.15em] hidden sm:block ${(tutorial.category || '').toLowerCase().includes('design') ? 'text-neon-purple' : 'text-neon-yellow'}`}>
-                    {tutorial.category} • {tutorial.subcategory}
-                  </span>
+                  {categoryLabel && (
+                    <span className={`text-[10px] font-bold uppercase tracking-[0.15em] hidden sm:block ${(tutorial.category || '').toLowerCase().includes('design') ? 'text-neon-purple' : 'text-neon-yellow'}`}>
+                      {categoryLabel}
+                    </span>
+                  )}
                   <button 
                     onClick={() => setIsExpanded(false)}
                     className="h-10 w-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white hover:bg-white/20 hover:border-white/30 transition-all shadow-lg"
@@ -322,47 +361,55 @@ export default function TutorialCard({ tutorial, lang }: TutorialCardProps) {
                   <h1 className="text-4xl md:text-6xl font-black text-slate-900 dark:text-white mb-6 uppercase tracking-tight leading-none bg-gradient-to-r from-slate-900 to-slate-500 dark:from-white dark:to-slate-500 bg-clip-text text-transparent">
                     {tutorial.title}
                   </h1>
-                  <p className="text-xl text-slate-400 font-light max-w-3xl border-l-2 border-neon-yellow pl-6 py-2">
-                    {tutorial.primaryQuestion}
-                  </p>
+                  {primaryQuestion && (
+                    <p className="text-xl text-slate-400 font-light max-w-3xl border-l-2 border-neon-yellow pl-6 py-2">
+                      {primaryQuestion}
+                    </p>
+                  )}
                 </header>
 
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
                   <div className="lg:col-span-12 space-y-12">
                     {/* Objective Section */}
-                    <div className="glass p-8 rounded-3xl border-white/5 relative overflow-hidden group">
-                      <div className="absolute top-0 right-0 p-8 opacity-[0.03] dark:opacity-5">
-                        <Target className="w-32 h-32" />
+                    {objective && (
+                      <div className="glass p-8 rounded-3xl border-white/5 relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 p-8 opacity-[0.03] dark:opacity-5">
+                          <Target className="w-32 h-32" />
+                        </div>
+                        <div className="flex items-center space-x-4 mb-6">
+                          <div className="h-10 w-10 glass flex items-center justify-center text-xl rounded-xl">🎯</div>
+                          <h2 className="text-lg font-black text-slate-900 dark:text-white uppercase tracking-widest">{t.objectiveLabel}</h2>
+                        </div>
+                        <p className="text-lg text-slate-600 dark:text-slate-300 leading-relaxed max-w-4xl">
+                          {objective}
+                        </p>
                       </div>
-                      <div className="flex items-center space-x-4 mb-6">
-                        <div className="h-10 w-10 glass flex items-center justify-center text-xl rounded-xl">🎯</div>
-                        <h2 className="text-lg font-black text-slate-900 dark:text-white uppercase tracking-widest">{t.objectiveLabel}</h2>
-                      </div>
-                      <p className="text-lg text-slate-600 dark:text-slate-300 leading-relaxed max-w-4xl">
-                        {tutorial.objective}
-                      </p>
-                    </div>
+                    )}
 
                     {/* Steps Section */}
-                    <div className="space-y-8">
-                      <div className="flex items-center space-x-4">
-                        <div className="h-10 w-10 glass flex items-center justify-center text-xl rounded-xl">📖</div>
-                        <h2 className="text-lg font-black text-slate-900 dark:text-white uppercase tracking-widest">{t.stepsLabel}</h2>
-                      </div>
+                    {steps && (
+                      <div className="space-y-8">
+                        <div className="flex items-center space-x-4">
+                          <div className="h-10 w-10 glass flex items-center justify-center text-xl rounded-xl">📖</div>
+                          <h2 className="text-lg font-black text-slate-900 dark:text-white uppercase tracking-widest">{t.stepsLabel}</h2>
+                        </div>
 
-                      <div className="glass p-8 md:p-12 rounded-[2.5rem] border-white/10 bg-white/[0.01] shadow-2xl">
-                        <div className="text-base md:text-lg text-slate-600 dark:text-slate-300 leading-relaxed font-normal">
-                          {renderSteps(tutorial.steps)}
+                        <div className="glass p-8 md:p-12 rounded-[2.5rem] border-white/10 bg-white/[0.01] shadow-2xl">
+                          <div className="text-base md:text-lg text-slate-600 dark:text-slate-300 leading-relaxed font-normal">
+                            {renderSteps(steps)}
+                          </div>
                         </div>
                       </div>
-                    </div>
+                    )}
                   </div>
                 </div>
 
                 <footer className="pt-12 border-t border-white/5 flex flex-col md:flex-row md:items-center justify-between gap-6">
                   <div className="flex flex-wrap gap-4 text-[10px] font-mono text-slate-600 uppercase tracking-widest">
                     <div className="glass px-4 py-2 rounded-full">ID: {tutorial.id}</div>
-                    <div className="glass px-4 py-2 rounded-full">Ref: Manual_{tutorial.subcategory?.replace(/\s/g, '_')}_V1</div>
+                    {hasFilledContent(tutorial.subcategory) && (
+                      <div className="glass px-4 py-2 rounded-full">Ref: Manual_{tutorial.subcategory?.replace(/\s/g, '_')}_V1</div>
+                    )}
                   </div>
                 </footer>
               </div>
