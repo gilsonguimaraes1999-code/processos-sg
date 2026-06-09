@@ -5,14 +5,12 @@
 
 import { motion, AnimatePresence } from 'motion/react';
 import React, { useEffect, useRef, useState } from 'react';
-import { User, Lock, Eye, EyeOff, ArrowRight, Loader2, AlertCircle, Database, Save, RotateCcw } from 'lucide-react';
+import { User, Lock, Eye, EyeOff, ArrowRight, Loader2, AlertCircle, RotateCcw } from 'lucide-react';
 
 interface ThreeDLogoProps {
   onLogin: (username: string, password: string) => Promise<void>;
   isLoading?: boolean;
   error?: string | null;
-  manualUrl?: string;
-  onManualUrlChange?: (url: string) => void;
   onRetry?: () => void;
   diagnosticInfo?: {
     url: string;
@@ -27,8 +25,6 @@ export default function ThreeDLogo({
   onLogin, 
   isLoading, 
   error,
-  manualUrl = '',
-  onManualUrlChange,
   onRetry,
   diagnosticInfo
 }: ThreeDLogoProps) {
@@ -39,14 +35,7 @@ export default function ThreeDLogo({
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfig, setShowConfig] = useState(false);
   const [showDiagnostics, setShowDiagnostics] = useState(false);
-
-  const handleSaveConfig = () => {
-    localStorage.setItem('manual_apps_script_url', manualUrl);
-    setShowConfig(false);
-    if (onRetry) onRetry();
-  };
 
   const handleNextStep = (e: React.FormEvent) => {
     e.preventDefault();
@@ -302,15 +291,6 @@ export default function ThreeDLogo({
                       <RotateCcw size={10} />
                       Tentar Novamente
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => setShowConfig(!showConfig)}
-                      className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-[9px] font-bold uppercase tracking-widest transition-all ${showConfig ? 'bg-yellow-400 text-black' : 'glass text-yellow-400/60 hover:text-yellow-400 border border-yellow-400/20'}`}
-                    >
-                      <Database size={10} />
-                      {showConfig ? 'Fechar' : 'Configurar URL'}
-                    </button>
-                    
                     {diagnosticInfo && (
                       <button
                         type="button"
@@ -356,34 +336,6 @@ export default function ThreeDLogo({
                                 <span>{diagnosticInfo.error}</span>
                               </p>
                             )}
-                          </div>
-                        </div>
-                      </motion.div>
-                    )}
-                    {showConfig && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        className="w-full overflow-hidden"
-                      >
-                        <div className="p-4 bg-black/60 border border-yellow-400/20 rounded-xl space-y-3 mt-2">
-                          <label className="block text-[8px] uppercase font-bold text-slate-500 tracking-tighter">URL do Apps Script (Override)</label>
-                          <div className="flex gap-2">
-                            <input
-                              type="text"
-                              value={manualUrl}
-                              onChange={(e) => onManualUrlChange?.(e.target.value)}
-                              placeholder="https://script.google.com/..."
-                              className="flex-1 bg-black/80 border border-white/10 rounded-lg px-3 py-2 text-[10px] text-white focus:border-yellow-400/50 outline-none transition-colors"
-                            />
-                            <button
-                              type="button"
-                              onClick={handleSaveConfig}
-                              className="px-3 bg-yellow-400 text-black rounded-lg hover:scale-105 transition-transform"
-                            >
-                              <Save size={14} />
-                            </button>
                           </div>
                         </div>
                       </motion.div>

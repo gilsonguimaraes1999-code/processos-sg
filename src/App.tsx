@@ -17,6 +17,7 @@ export default function App() {
   const [showLanding, setShowLanding] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentUser, setCurrentUser] = useState<string | null>(() => localStorage.getItem('portal_current_user'));
+  const [currentUserRole, setCurrentUserRole] = useState<string>(() => localStorage.getItem('portal_current_role') || '');
   const [authToken, setAuthToken] = useState<string>(() => localStorage.getItem('portal_auth_token') || '');
   const [loginLoading, setLoginLoading] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
@@ -46,6 +47,15 @@ export default function App() {
 
   const t = translations[lang];
 
+  const normalizeRole = (value: unknown) => String(value ?? '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]/g, '');
+
+  const isOwnerRole = (role: unknown) => normalizeRole(role) === 'owner';
+  const isOwner = isOwnerRole(currentUserRole);
+
   const handleTutorialSelected = (tutorial: Tutorial) => {
     setSelectedCategory(null);
     setSearchTerm(tutorial.title);
@@ -54,7 +64,7 @@ export default function App() {
     }, 100);
   };
 
-  const fetchData = async (currentLang: Language = lang, useCache: boolean = true, tokenOverride?: string) => {
+  const fetchData = async (currentLang: Language = lang, useCache: boolean = true, tokenOverride?: string, ownerOverride?: boolean) => {
     if (useCache && cache[currentLang]) {
       setTutorials(cache[currentLang].tutorials);
       setCities(cache[currentLang].cities);
@@ -82,7 +92,8 @@ export default function App() {
       };
       const activeToken = tokenOverride || authToken || localStorage.getItem('portal_auth_token') || '';
       if (activeToken) headers['Authorization'] = `Bearer ${activeToken}`;
-      if (manualScriptUrl) headers['x-manual-script-url'] = manualScriptUrl;
+      const canUseManualScriptUrl = ownerOverride ?? isOwner;
+      if (canUseManualScriptUrl && manualScriptUrl) headers['x-manual-script-url'] = manualScriptUrl;
 
       // Adicionando timestamp para furar cache do navegador e Vercel Edge
       const fetchUrl = `/api/tutorials?lang=${langId}&_t=${Date.now()}`;
@@ -153,7 +164,7 @@ export default function App() {
       setCities(parsedData.cities);
       setCache(prev => ({ ...prev, [langId]: parsedData }));
       
-      if (manualScriptUrl) localStorage.setItem('manual_apps_script_url', manualScriptUrl);
+      if ((ownerOverride ?? isOwner) && manualScriptUrl) localStorage.setItem('manual_apps_script_url', manualScriptUrl);
 
       return parsedData;
 
@@ -215,7 +226,7 @@ export default function App() {
     });
   }, [tutorials, searchTerm, selectedCategory]);
 
-  const preloadAllData = async (tokenOverride?: string) => {
+  const preloadAllData = async (tokenOverride?: string, ownerOverride: boolean = isOwner) => {
     setIsPreloading(true);
     setPreloadProgress(0);
     setLanguagesProcessed([]);
@@ -230,7 +241,7 @@ export default function App() {
         setCurrentPreloadTask(`Sincronizando: ${currentLang.toUpperCase()}`);
         
         try {
-          const data = await fetchData(currentLang, false, tokenOverride);
+          const data = await fetchData(currentLang, false, tokenOverride, ownerOverride);
           if (data) loadedData[currentLang] = data;
           setLanguagesProcessed(prev => [...prev, currentLang]);
         } catch (err) {
@@ -277,8 +288,7 @@ export default function App() {
       const response = await fetch('/api/login', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          ...(manualScriptUrl ? { 'x-manual-script-url': manualScriptUrl } : {})
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({ username, password })
       });
@@ -295,14 +305,18 @@ export default function App() {
       }
 
       const normalizedUser = result?.user?.name || result?.user?.username || username.toLowerCase();
+      const normalizedRole = result?.user?.role || '';
+      const ownerForSession = isOwnerRole(normalizedRole);
 
       localStorage.setItem('portal_auth_token', result.token);
       localStorage.setItem('portal_current_user', normalizedUser);
+      localStorage.setItem('portal_current_role', normalizedRole);
       setAuthToken(result.token);
       setCurrentUser(normalizedUser);
+      setCurrentUserRole(normalizedRole);
       
       // Whitelist/Preload sequence starts here
-      await preloadAllData(result.token);
+      await preloadAllData(result.token, ownerForSession);
     } catch (err: any) {
       setLoginError(err?.message || 'Usuário ou senha inválidos.');
     } finally {
@@ -314,8 +328,10 @@ export default function App() {
     setIsAuthenticated(false);
     setCurrentUser(null);
     setAuthToken('');
+    setCurrentUserRole('');
     localStorage.removeItem('portal_auth_token');
     localStorage.removeItem('portal_current_user');
+    localStorage.removeItem('portal_current_role');
     setCache({});
     setShowLanding(true);
     // Optional: Clear any session items if needed
@@ -330,8 +346,6 @@ export default function App() {
             isLoading={loginLoading}
             error={loginError}
             diagnosticInfo={diagnosticInfo}
-            manualUrl={manualScriptUrl}
-            onManualUrlChange={setManualScriptUrl}
             onRetry={() => {
               setLoginError(null);
               // If it was a preload error, we might need to reset something
@@ -374,6 +388,7 @@ export default function App() {
               lang={lang}
               onLogout={handleLogout}
               currentUser={currentUser}
+              isOwner={isOwner}
               manualScriptUrl={manualScriptUrl}
               onManualUrlChange={setManualScriptUrl}
               onRefreshData={() => fetchData(lang)}
@@ -392,15 +407,17 @@ export default function App() {
                       Tentar Novamente
                     </button>
                     
-                    <button 
-                      onClick={() => setShowConfig(!showConfig)}
-                      className="px-4 py-2 glass text-slate-300 text-[10px] font-bold uppercase tracking-widest rounded-lg hover:bg-white/5 transition-colors"
-                    >
-                      {showConfig ? 'Fechar Filtros' : 'Configurar URL'}
-                    </button>
+                    {isOwner && (
+                      <button 
+                        onClick={() => setShowConfig(!showConfig)}
+                        className="px-4 py-2 glass text-slate-300 text-[10px] font-bold uppercase tracking-widest rounded-lg hover:bg-white/5 transition-colors"
+                      >
+                        {showConfig ? 'Fechar Filtros' : 'Configurar URL'}
+                      </button>
+                    )}
                   </div>
 
-                  {showConfig && (
+                  {isOwner && showConfig && (
                     <motion.div 
                       initial={{ height: 0, opacity: 0 }}
                       animate={{ height: 'auto', opacity: 1 }}

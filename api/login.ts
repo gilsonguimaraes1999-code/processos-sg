@@ -11,7 +11,7 @@ export const config = {
 function setDefaultHeaders(res: VercelResponse) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST,OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, x-manual-script-url");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
   res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
   res.setHeader("Content-Type", "application/json; charset=utf-8");
 }
@@ -27,9 +27,8 @@ function cleanUrl(value?: string) {
     .trim();
 }
 
-function getConfiguredAppsScriptUrl(manualUrl?: string) {
+function getConfiguredAppsScriptUrl() {
   const candidates = [
-    manualUrl,
     process.env.APPS_SCRIPT_URL,
     process.env.VITE_APPS_SCRIPT_URL,
     DEFAULT_APPS_SCRIPT_URL,
@@ -89,8 +88,8 @@ async function fetchWithTimeout(url: string, body: unknown, timeoutMs: number) {
   }
 }
 
-async function validateLoginWithAppsScript(username: string, password: string, manualUrl?: string) {
-  const appsScriptUrl = getConfiguredAppsScriptUrl(manualUrl);
+async function validateLoginWithAppsScript(username: string, password: string) {
+  const appsScriptUrl = getConfiguredAppsScriptUrl();
   const timeoutMs = Number(process.env.APPS_SCRIPT_TIMEOUT_MS || 25000);
 
   const response = await fetchWithTimeout(
@@ -151,13 +150,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const username = cleanText(req.body?.username).toLowerCase();
     const password = cleanText(req.body?.password);
-    const manualUrl = typeof req.headers["x-manual-script-url"] === "string" ? req.headers["x-manual-script-url"] : undefined;
-
     if (!username || !password) {
       return res.status(400).json({ ok: false, error: "Informe usuário e senha." });
     }
 
-    const authResult = await validateLoginWithAppsScript(username, password, manualUrl);
+    const authResult = await validateLoginWithAppsScript(username, password);
 
     if (!authResult?.ok) {
       return res.status(401).json({ ok: false, error: authResult?.error || "Usuário ou senha inválidos." });

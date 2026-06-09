@@ -97,6 +97,10 @@ function normalize(value: unknown) {
     .replace(/[^a-z0-9]/g, "");
 }
 
+function isOwnerRole(value: unknown) {
+  return normalize(value) === "owner";
+}
+
 function getConfiguredAppsScriptUrl(manualUrl?: string) {
   const candidates = [
     manualUrl,
@@ -350,7 +354,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     const lang = String(req.query.lang || "pt");
-    const manualUrl = typeof req.headers["x-manual-script-url"] === "string" ? req.headers["x-manual-script-url"] : undefined;
+    const requestedManualUrl = typeof req.headers["x-manual-script-url"] === "string" ? req.headers["x-manual-script-url"] : undefined;
+    const manualUrl = isOwnerRole((session as any)?.role) ? requestedManualUrl : undefined;
     const data = await fetchKnowledgeBase(lang, manualUrl);
     return res.status(200).json(data);
   } catch (error: any) {

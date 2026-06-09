@@ -6,9 +6,10 @@
  * 2. Na primeira linha coloque estes cabeçalhos:
  *    Usuario | Senha | Nome | Cargo | Ativo
  * 3. Exemplos de linhas:
- *    lu | 123456 | Lu | Master | SIM
+ *    lu | 123456 | Lu | Owner | SIM
  *    vendedor01 | abc123 | Vendedor 01 | Comercial | SIM
- * 4. Para bloquear alguém, coloque Ativo como: NÃO, INATIVO, BLOQUEADO ou FALSE.
+ * 4. Para permitir editar URL do Apps Script dentro do site, coloque Cargo como: Owner.
+ * 5. Para bloquear alguém, coloque Ativo como: NÃO, INATIVO, BLOQUEADO ou FALSE.
  *
  * IMPORTANTE:
  * Sempre que alterar este código, vá em Implantar > Gerenciar implantações > Editar > Nova versão > Implantar.

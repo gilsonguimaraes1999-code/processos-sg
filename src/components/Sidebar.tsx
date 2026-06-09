@@ -29,6 +29,7 @@ interface SidebarProps {
   lang: Language;
   onLogout: () => void;
   currentUser: string | null;
+  isOwner: boolean;
   manualScriptUrl: string;
   onManualUrlChange: (url: string) => void;
   onRefreshData: () => void;
@@ -57,6 +58,7 @@ export default function Sidebar({
   lang,
   onLogout,
   currentUser,
+  isOwner,
   manualScriptUrl,
   onManualUrlChange,
   onRefreshData
@@ -136,7 +138,7 @@ export default function Sidebar({
         </div>
 
         <div className="mt-auto space-y-4 pt-6 border-t border-white/5">
-          {currentUser === 'owner' && (
+          {isOwner && (
             <div className="space-y-3">
               <button 
                 onClick={() => setShowConfig(!showConfig)}

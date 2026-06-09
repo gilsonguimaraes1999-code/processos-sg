@@ -40,7 +40,10 @@ Você pode subir o projeto de duas formas:
 O botão Atualizar/Update/Actualizar agora força a atualização usando o idioma selecionado no momento.
 Exemplo: se estiver em EN, atualiza `/api/tutorials?lang=en`; se estiver em ES, atualiza `/api/tutorials?lang=es`.
 
-## URL do Apps Script
+## URL do Apps Script e permissão Owner
 
-A URL configurada pelo botão "Configurar Script" dentro do site fica salva apenas no navegador atual, via localStorage.
+A tela de login não exibe campo para configurar URL do Apps Script. O login usa somente a variável `APPS_SCRIPT_URL` configurada no Vercel.
+
+Depois de logado, o botão **Configurar Script** aparece somente para contas com `Cargo` igual a `Owner` na aba `USUARIOS`. Para qualquer outro cargo, essa área fica oculta e o backend ignora tentativas de enviar URL manual.
+
 Para valer para todos os usuários, configure a variável `APPS_SCRIPT_URL` no Vercel em Settings > Environment Variables e faça Redeploy.
