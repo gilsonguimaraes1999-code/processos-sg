@@ -142,10 +142,10 @@ export default function Sidebar({
             <div className="space-y-3">
               <button 
                 onClick={() => setShowConfig(!showConfig)}
-                className={`w-full h-11 rounded-xl flex items-center justify-center gap-3 transition-all group ${showConfig ? 'bg-neon-yellow text-slate-950 font-bold' : 'glass text-white/60 hover:text-white border border-white/5'}`}
+                className={`w-full h-11 rounded-xl flex items-center justify-center gap-3 transition-all group ${showConfig ? 'bg-neon-yellow text-slate-950 font-bold neon-border' : 'glass neon-border text-white/60 hover:text-white'}`}
               >
                 <Database size={16} className={showConfig ? 'text-slate-950' : 'text-neon-yellow'} />
-                <span className="text-[10px] font-black uppercase tracking-widest">Configurar Script</span>
+                <span className="text-[10px] font-black uppercase tracking-widest">Configurar Apps Script</span>
               </button>
 
               <AnimatePresence>
