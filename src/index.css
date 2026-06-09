@@ -1,0 +1,89 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Space Grotesk", sans-serif;
+  
+  --color-neon-yellow: #FFD700;
+  --color-neon-purple: #9d00ff;
+  --color-bg-dark: #05070a;
+}
+
+@layer utilities {
+  .glass {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+  }
+
+  .dark .glass {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+  }
+
+  .glass-heavy {
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(40px);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+  }
+
+  .dark .glass-heavy {
+    background: rgba(5, 7, 10, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .glass-matte {
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.1);
+  }
+
+  .dark .glass-matte {
+    background: rgba(10, 13, 20, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.5);
+  }
+
+  .vertical-text {
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .neon-border {
+    border: 1px solid #FFD700;
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.3);
+  }
+
+  .led-pulse {
+    animation: pulse 2s infinite;
+    border: 1px solid #FFD700;
+  }
+
+  @keyframes pulse {
+    0% { box-shadow: 0 0 5px #FFD700; }
+    50% { box-shadow: 0 0 20px #FFD700, inset 0 0 10px #FFD700; }
+    100% { box-shadow: 0 0 5px #FFD700; }
+  }
+}
+
+@layer base {
+  body {
+    @apply font-sans bg-slate-50 text-slate-900 dark:bg-bg-dark dark:text-slate-200;
+  }
+  h1 {
+    @apply font-sans font-black tracking-tight text-slate-900 dark:text-white;
+  }
+  h2, h3, h4 {
+    @apply font-sans font-bold tracking-tight text-slate-800 dark:text-white;
+  }
+}

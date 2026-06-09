@@ -1,0 +1,24 @@
+PASSO A PASSO RÁPIDO
+
+1) APPS SCRIPT
+- Abra a planilha no Google Sheets.
+- Vá em Extensões > Apps Script.
+- Cole o arquivo APPS_SCRIPT.gs completo.
+- Clique em Implantar > Nova implantação > App da Web.
+- Executar como: você mesmo.
+- Quem pode acessar: Qualquer pessoa.
+- Copie a URL final que termina em /exec.
+
+2) VERCEL
+- Suba este projeto para o GitHub.
+- Importe o projeto no Vercel.
+- Em Environment Variables, adicione:
+  APPS_SCRIPT_URL = sua URL do Apps Script /exec
+  GEMINI_API_KEY = opcional, apenas para busca com IA
+- Build Command: npm run build
+- Output Directory: dist
+
+3) TESTES DEPOIS DO DEPLOY
+- Acesse: https://SEU-SITE.vercel.app/api/health
+- Depois: https://SEU-SITE.vercel.app/api/tutorials?lang=pt
+- Se aparecer JSON, a sincronização está funcionando.

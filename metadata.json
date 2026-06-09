@@ -1,0 +1,6 @@
+{
+  "name": "Processos Comercial",
+  "description": "Portal de gestão de processos comerciais e portão de comandos com design imersivo e suporte multilíngue.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
