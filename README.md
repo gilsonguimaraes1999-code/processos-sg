@@ -1,30 +1,35 @@
-# Portal de Processos - pronto para Vercel
+# Instruções de Implantação no Vercel
 
-Este pacote foi ajustado para Vercel usando frontend Vite + React e API Serverless nativa em `/api`.
+Este projeto foi otimizado para funcionar perfeitamente no Vercel. Siga os passos abaixo:
 
-## Como publicar no Vercel
+## 1. Preparação
+Certifique-se de que você tem uma conta no [Vercel](https://vercel.com).
 
-1. Suba todos os arquivos para um repositório no GitHub.
-2. No Vercel, clique em **Add New > Project** e importe o repositório.
-3. Em **Environment Variables**, adicione:
-   - `APPS_SCRIPT_URL` = URL do Apps Script terminada em `/exec`
-   - `GEMINI_API_KEY` = opcional, apenas se quiser usar a busca com IA
-4. Deploy.
+## 2. Configuração do Google Sheets (Apps Script)
+Se você ainda não configurou sua planilha, use o código contido no arquivo `APPS_SCRIPT.gs` enviado junto com este projeto:
+1. Abra sua Planilha Google.
+2. Vá em **Extensões** > **Apps Script**.
+3. Cole o código de `APPS_SCRIPT.gs`.
+4. Clique em **Implantar** > **Nova Implantação**.
+5. Selecione **App da Web**, configure para que **Qualquer pessoa** tenha acesso.
+6. Copie a URL gerada.
 
-## Configuração esperada no Vercel
+## 3. Implantação no Vercel
+Você pode subir o projeto de duas formas:
 
-- Framework: **Vite**
-- Build Command: `npm run build`
-- Output Directory: `dist`
-- API de tutoriais: `/api/tutorials?lang=pt`
-- Teste de saúde: `/api/health`
+### Opção A: Via Dashboard (Mais fácil)
+1. Crie um novo repositório no GitHub/GitLab e suba estes arquivos.
+2. No Vercel, clique em **Add New** > **Project** e selecione o repositório.
+3. **IMPORTANTE**: Antes de clicar em Deploy, adicione as seguintes **Environment Variables**:
+   - `GEMINI_API_KEY`: Sua chave da API do Google Gemini.
+   - `APPS_SCRIPT_URL`: A URL que você copiou no passo 2.
 
-O arquivo `vercel.json` já está configurado com essas opções.
+### Opção B: Via Vercel CLI
+1. Instale o CLI: `npm i -g vercel`
+2. Execute `vercel` na pasta do projeto.
+3. Siga as instruções e adicione as variáveis de ambiente quando solicitado.
 
-## Apps Script
-
-O arquivo `APPS_SCRIPT.gs` também foi atualizado. Cole ele inteiro no Google Apps Script e reimplante como **App da Web** com acesso para **Qualquer pessoa**.
-
-## Observação importante
-
-Se o projeto for enviado para o GitHub, o arquivo `.env` normalmente não sobe por causa do `.gitignore`. Por isso, configure `APPS_SCRIPT_URL` diretamente nas variáveis de ambiente do Vercel.
+## 4. Notas Técnicas
+- O Backend está configurado como **Vercel Serverless Functions** na pasta `/api`.
+- O Frontend é uma aplicação **Vite + React**.
+- Todas as rotas `/api/*` são roteadas automaticamente para o interpretador Node.js do Vercel.
