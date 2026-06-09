@@ -21,27 +21,91 @@ export default function TutorialCard({ tutorial, lang }: TutorialCardProps) {
 
   const renderSteps = (text: string) => {
     if (!text) return null;
-    
-    // Improved regex to catch images
-    const urlRegex = /(https?:\/\/[^\s]+?\.(?:jpg|jpeg|png|gif|webp|svg|bmp)(?:\?[^\s]*)?)/gi;
-    const stepRegex = /(Passo\s*\d+|PASSO\s*\d+)/gi;
-    const highlightRegex = /(Passo\s*\d+|PASSO\s*\d+|(?:Exemplo|EXEMPLO)[^:\n]*)/gi;
-    
-    // Split into lines for structural processing
-    const lines = text.split('\n');
 
-    const combinedUrlRegex = /(https?:\/\/[^\s]+)/gi;
+    const stepPattern = '(?:Passo|Paso|Step)\\s*\\d+';
+    const examplePattern = '(?:Exemplo|Ejemplo|Example)[^:\\n]*';
+    const imageLabelPattern = '^(?:Imagem|Imagen|Image)\\s*:';
+    const videoLabelPattern = '^(?:V[ií]deo(?:\\s+Explicativo)?|Video(?:\\s+Explicativo)?|Explanatory\\s+Video)\\s*:?';
+
+    const stepRegex = new RegExp(stepPattern, 'i');
+    const highlightRegex = new RegExp(`(${stepPattern}|${examplePattern})`, 'gi');
+    const imageLabelRegex = new RegExp(imageLabelPattern, 'i');
+    const videoLabelRegex = new RegExp(videoLabelPattern, 'i');
+    const exampleRegex = /(?:Exemplo|Ejemplo|Example)/i;
+
+    const lines = text.split('\n');
+    const combinedUrlRegex = /(https?:\/\/[^\s<>"')]+)/gi;
+
+    const cleanUrl = (url: string) => url.replace(/[.,;]+$/g, '');
     const isImage = (url: string) => /\.(jpg|jpeg|png|gif|webp|svg|bmp)(\?.*)?$/i.test(url);
+
+    const getVideoEmbedInfo = (url: string): { type: 'iframe' | 'video'; src: string } | null => {
+      const cleaned = cleanUrl(url);
+
+      if (/\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(cleaned)) {
+        return { type: 'video', src: cleaned };
+      }
+
+      const driveFileMatch = cleaned.match(/drive\.google\.com\/file\/d\/([^/]+)/i);
+      if (driveFileMatch?.[1]) {
+        return { type: 'iframe', src: `https://drive.google.com/file/d/${driveFileMatch[1]}/preview` };
+      }
+
+      try {
+        const parsed = new URL(cleaned);
+        const host = parsed.hostname.replace(/^www\./, '');
+
+        if (host === 'youtu.be') {
+          const id = parsed.pathname.split('/').filter(Boolean)[0];
+          if (id) return { type: 'iframe', src: `https://www.youtube.com/embed/${id}` };
+        }
+
+        if (host.endsWith('youtube.com')) {
+          const watchId = parsed.searchParams.get('v');
+          const pathParts = parsed.pathname.split('/').filter(Boolean);
+          const embedId = parsed.pathname.includes('/embed/') ? pathParts[pathParts.length - 1] : null;
+          const shortsId = parsed.pathname.includes('/shorts/') ? pathParts[pathParts.length - 1] : null;
+          const id = watchId || embedId || shortsId;
+          if (id) return { type: 'iframe', src: `https://www.youtube.com/embed/${id}` };
+        }
+      } catch {
+        // Keeps non-standard links as regular links.
+      }
+
+      return null;
+    };
+
+    const renderVideo = (videoInfo: { type: 'iframe' | 'video'; src: string }, key: string | number) => (
+      <div key={key} className="mt-3 mb-8 w-full max-w-4xl overflow-hidden rounded-2xl border border-neon-yellow/20 bg-black/50 shadow-[0_20px_50px_rgba(0,0,0,0.45)] ring-1 ring-neon-yellow/10">
+        {videoInfo.type === 'iframe' ? (
+          <iframe
+            src={videoInfo.src}
+            className="w-full aspect-video block"
+            allow="autoplay; encrypted-media; picture-in-picture"
+            allowFullScreen
+            title="Vídeo explicativo"
+          />
+        ) : (
+          <video
+            src={videoInfo.src}
+            className="w-full aspect-video block bg-black"
+            controls
+            playsInline
+          />
+        )}
+      </div>
+    );
 
     return lines.map((line, lineIdx) => {
       let content = line.trim();
       if (!content) return <div key={lineIdx} className="h-4" />;
 
       const isPassoLine = content.match(stepRegex);
-      const isExemploLine = content.match(/^(Exemplo|EXEMPLO)/i);
-      const isImageLabel = content.match(/^(Imagem|IMAGEM):/i);
-      
-      const showBullet = !isPassoLine && !isImageLabel && !isExemploLine;
+      const isExemploLine = content.match(/^(Exemplo|Ejemplo|Example)/i);
+      const isImageLabel = content.match(imageLabelRegex);
+      const isVideoLabel = content.match(videoLabelRegex);
+      const isVideoOnlyLine = Boolean(content.match(/^https?:\/\/[^\s<>\"')]+$/i) && getVideoEmbedInfo(cleanUrl(content)));
+      const showBullet = !isPassoLine && !isImageLabel && !isExemploLine && !isVideoLabel && !isVideoOnlyLine;
 
       if (showBullet) {
         content = content.replace(/^[-*\s\.]+/, '');
@@ -49,25 +113,32 @@ export default function TutorialCard({ tutorial, lang }: TutorialCardProps) {
 
       const parts = content.split(combinedUrlRegex);
       return (
-        <div key={lineIdx} className={`mb-6 last:mb-0 flex items-start group/line ${isPassoLine ? 'mt-10 mb-8' : isExemploLine ? 'mt-6 mb-4' : ''}`}>
+        <div key={lineIdx} className={`mb-6 last:mb-0 flex items-start group/line ${isPassoLine ? 'mt-10 mb-8' : isExemploLine ? 'mt-6 mb-4' : isVideoLabel ? 'mt-8 mb-6' : ''}`}>
           {showBullet && (
             <span className="shrink-0 mr-3 text-neon-yellow font-black opacity-40 group-hover/line:opacity-100 transition-opacity mt-2 text-[8px]">•</span>
           )}
-          
+
           <div className="flex-1">
             {parts.map((part, i) => {
+              const cleanedPart = cleanUrl(part);
+
               if (part.match(combinedUrlRegex)) {
-                if (isImage(part)) {
+                const videoInfo = getVideoEmbedInfo(cleanedPart);
+                if (videoInfo) {
+                  return renderVideo(videoInfo, i);
+                }
+
+                if (isImage(cleanedPart)) {
                   return (
                     <div key={i} className="mt-2 mb-8 group/img relative max-w-fit">
                       <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-black/40 shadow-[0_20px_50px_rgba(0,0,0,0.5)] ring-1 ring-white/5 group-hover/img:ring-neon-yellow/30 transition-all duration-500">
-                        <img 
-                          src={part} 
-                          alt="Manual Screenshot" 
+                        <img
+                          src={cleanedPart}
+                          alt="Manual Screenshot"
                           className="max-w-full h-auto cursor-pointer transition-transform duration-700 hover:scale-[1.01] block"
                           onClick={(e) => {
                             e.stopPropagation();
-                            setSelectedImage(part);
+                            setSelectedImage(cleanedPart);
                           }}
                           referrerPolicy="no-referrer"
                         />
@@ -77,23 +148,22 @@ export default function TutorialCard({ tutorial, lang }: TutorialCardProps) {
                       </div>
                     </div>
                   );
-                } else {
-                  return (
-                    <a 
-                      key={i} 
-                      href={part} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-neon-yellow hover:text-white underline underline-offset-4 decoration-neon-yellow/30 hover:decoration-white transition-all font-bold mx-1 inline-flex items-center gap-1"
-                    >
-                      {part}
-                    </a>
-                  );
                 }
+
+                return (
+                  <a
+                    key={i}
+                    href={cleanedPart}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-neon-yellow hover:text-white underline underline-offset-4 decoration-neon-yellow/30 hover:decoration-white transition-all font-bold mx-1 inline-flex items-center gap-1"
+                  >
+                    {cleanedPart}
+                  </a>
+                );
               }
 
-              // Highlight "Imagem: ..." lines with a closer, integrated style
-              if (part.trim().match(/^(Imagem|IMAGEM):/i)) {
+              if (part.trim().match(imageLabelRegex)) {
                 return (
                   <div key={i} className="inline-flex items-center bg-white/[0.03] border-l-2 border-neon-yellow rounded-r-lg px-4 py-2 mb-1 group-hover/line:bg-white/[0.07] transition-colors">
                     <span className="text-slate-200 text-xs font-black italic tracking-wide uppercase">{part}</span>
@@ -101,10 +171,17 @@ export default function TutorialCard({ tutorial, lang }: TutorialCardProps) {
                 );
               }
 
-              // Highlighting "PASSO X", "EXEMPLO" and **bold** text
+              if (part.trim().match(videoLabelRegex)) {
+                return (
+                  <div key={i} className="inline-flex items-center bg-neon-yellow/10 border-l-2 border-neon-yellow rounded-r-lg px-4 py-2 mb-3 group-hover/line:bg-neon-yellow/15 transition-colors">
+                    <span className="text-neon-yellow text-xs font-black italic tracking-wide uppercase">{part}</span>
+                  </div>
+                );
+              }
+
               const rawText = part;
               const segments = rawText.split(highlightRegex);
-              
+
               const highlightedSegments = segments.map((seg: string, segIdx: number) => {
                 if (seg.match(stepRegex)) {
                   return (
@@ -114,37 +191,33 @@ export default function TutorialCard({ tutorial, lang }: TutorialCardProps) {
                   );
                 }
 
-                if (seg.match(/Exemplo|EXEMPLO/i)) {
+                if (seg.match(exampleRegex)) {
                   return (
                     <span key={segIdx} className="inline-flex items-center px-3 py-1 rounded-lg bg-sky-400/20 text-sky-300 text-[10px] font-black uppercase tracking-widest mr-2 border border-sky-400/30 shadow-[0_0_15px_rgba(56,189,248,0.2)]">
                       {seg}
                     </span>
                   );
                 }
-                
-                // Clean up separators if this segment follows a tag OR precedes one
+
                 let processedSeg = seg;
-                if (segIdx > 0 && segments[segIdx-1].match(highlightRegex)) {
-                  // Expanded cleaning to remove dashes, colons, dots, and extra spaces
+                if (segIdx > 0 && segments[segIdx - 1].match(highlightRegex)) {
                   processedSeg = processedSeg.replace(/^[:\s\-\.]+/, '');
                 }
                 if (segIdx < segments.length - 1 && segments[segIdx + 1].match(highlightRegex)) {
                   processedSeg = processedSeg.replace(/[:\s\-\.]+$/, '');
                 }
 
-                // 2 & 5. Highlight bold and keywords
                 const boldRegex = /\*\*(.*?)\*\*/g;
                 const subSegments = processedSeg.split(boldRegex);
-                
+
                 return subSegments.map((sub, subIdx) => {
                   if (subIdx % 2 === 1) {
                     return <strong key={subIdx} className="text-neon-yellow font-bold uppercase tracking-wide">{sub}</strong>;
                   }
-                  
-                  // 5. Highlight technical keywords
-                  const techRegex = /(\b3D\b|\btextura\b|\.ydd\b|\.ytd\b|\.yft\b|\bOpenIV\b|\bmods\b)/gi;
+
+                  const techRegex = /(\b3D\b|\btextura\b|\btexture\b|\btextura\b|\.ydd\b|\.ytd\b|\.yft\b|\bOpenIV\b|\bmods\b)/gi;
                   const techParts = sub.split(techRegex);
-                  
+
                   return techParts.map((tp, tpIdx) => {
                     if (tp.match(techRegex)) {
                       return <span key={tpIdx} className="text-neon-yellow font-bold border-b border-neon-yellow/30">{tp}</span>;
