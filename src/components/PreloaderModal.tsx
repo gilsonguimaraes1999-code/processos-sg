@@ -3,13 +3,118 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Target, Globe, ShieldCheck, Database, Loader2 } from 'lucide-react';
+import { Target, Globe, ShieldCheck, Database } from 'lucide-react';
 
 interface PreloaderModalProps {
   progress: number;
   currentTask: string;
   languagesProcessed: string[];
+}
+
+function SpaceWarpBackground() {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const mouseRef = useRef({ x: 0, y: 0 });
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    let w = canvas.width = window.innerWidth;
+    let h = canvas.height = window.innerHeight;
+
+    const stars: { x: number; y: number; z: number; size: number; color: string; opacity: number; pulse: number }[] = [];
+    const numStars = 1800;
+    const colors = ['#ffffff', '#FFD700', '#FFFACD', '#F0E68C', '#ffffff', '#FFD700'];
+
+    for (let i = 0; i < numStars; i++) {
+      stars.push({
+        x: (Math.random() - 0.5) * 8000,
+        y: (Math.random() - 0.5) * 8000,
+        z: Math.random() * 2000,
+        size: Math.random() * 3.8 + 0.6,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        opacity: Math.random() * 0.7 + 0.3,
+        pulse: Math.random() * 0.015 + 0.005
+      });
+    }
+
+    const handleResize = () => {
+      w = canvas.width = window.innerWidth;
+      h = canvas.height = window.innerHeight;
+    };
+
+    const handleMouseMove = (e: MouseEvent) => {
+      mouseRef.current = {
+        x: (e.clientX / window.innerWidth) - 0.5,
+        y: (e.clientY / window.innerHeight) - 0.5
+      };
+    };
+
+    window.addEventListener('resize', handleResize);
+    window.addEventListener('mousemove', handleMouseMove);
+
+    let animationFrameId: number;
+
+    const draw = () => {
+      ctx.fillStyle = '#010208';
+      ctx.fillRect(0, 0, w, h);
+
+      const grad = ctx.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w);
+      grad.addColorStop(0, 'rgba(15, 15, 2, 0)');
+      grad.addColorStop(1, 'rgba(0, 0, 0, 0.9)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, w, h);
+
+      stars.forEach(star => {
+        star.z -= 0.5;
+        if (star.z <= 0) star.z = 2000;
+
+        const k = 400 / star.z;
+        const px = star.x * k + w / 2;
+        const py = star.y * k + h / 2;
+
+        const mx = mouseRef.current.x * 50 * k;
+        const my = mouseRef.current.y * 50 * k;
+
+        star.opacity += star.pulse;
+        if (star.opacity > 1 || star.opacity < 0.3) star.pulse *= -1;
+
+        if (px >= -100 && px <= w + 100 && py >= -100 && py <= h + 100) {
+          const size = star.size * k;
+          ctx.beginPath();
+          ctx.arc(px + mx, py + my, size, 0, Math.PI * 2);
+          ctx.fillStyle = star.color;
+          ctx.globalAlpha = star.opacity;
+
+          if (size > 2.2) {
+            ctx.shadowBlur = 12 * k;
+            ctx.shadowColor = star.color;
+          }
+
+          ctx.fill();
+          ctx.shadowBlur = 0;
+          ctx.globalAlpha = 1;
+        }
+      });
+
+      animationFrameId = requestAnimationFrame(draw);
+    };
+
+    draw();
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('mousemove', handleMouseMove);
+      cancelAnimationFrame(animationFrameId);
+    };
+  }, []);
+
+  return <canvas ref={canvasRef} className="absolute inset-0 z-0" />;
 }
 
 export default function PreloaderModal({ progress, currentTask, languagesProcessed }: PreloaderModalProps) {
@@ -18,14 +123,20 @@ export default function PreloaderModal({ progress, currentTask, languagesProcess
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black"
+      className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-[#010208] overflow-hidden"
     >
-      {/* Moving Background Grid */}
-      <div className="absolute inset-0 z-0 opacity-20" 
-           style={{ 
-             backgroundImage: 'radial-gradient(circle at 2px 2px, rgba(255, 215, 0, 0.15) 1px, transparent 0)',
-             backgroundSize: '40px 40px' 
-           }} 
+      <SpaceWarpBackground />
+
+      {/* Decorative ambient yellow glow */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-yellow-500/5 rounded-full blur-[180px] pointer-events-none z-[1]" />
+
+      {/* Subtle grid overlay */}
+      <div
+        className="absolute inset-0 z-[2] opacity-10 pointer-events-none"
+        style={{
+          backgroundImage: 'radial-gradient(circle at 2px 2px, rgba(255, 215, 0, 0.18) 1px, transparent 0)',
+          backgroundSize: '40px 40px'
+        }}
       />
 
       <div className="relative z-10 w-full max-w-md">
@@ -53,7 +164,7 @@ export default function PreloaderModal({ progress, currentTask, languagesProcess
 
           <div className="space-y-2">
             <h2 className="text-xl font-bold text-white tracking-widest uppercase">
-              Sincronização Ativa
+              Sincronizando
             </h2>
             <p className="text-[10px] text-slate-400 uppercase tracking-[0.2em] font-medium">
               Whitelisting Database Contents
@@ -105,7 +216,7 @@ export default function PreloaderModal({ progress, currentTask, languagesProcess
           </div>
 
           {/* Activity Logs */}
-          <div className="w-full p-4 rounded-xl bg-white/5 border border-white/10 text-left space-y-2 overflow-hidden h-24 relative">
+          <div className="w-full p-4 rounded-xl bg-white/5 border border-white/10 text-left space-y-2 overflow-hidden h-24 relative backdrop-blur-sm">
              <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent pointer-events-none" />
              <div className="flex items-center gap-2 text-[8px] font-mono text-neon-yellow opacity-70">
                 <Database className="w-3 h-3" />
