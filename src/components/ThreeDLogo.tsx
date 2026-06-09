@@ -182,11 +182,10 @@ export default function ThreeDLogo({
           <div className="absolute inset-0 blur-[40px] bg-yellow-400/10 rounded-full scale-90 pointer-events-none" />
           
           <img
-            src="https://i.ibb.co/69s087d/image.png"
+            src="/logo.png"
             alt="Logo"
             className="w-48 h-48 md:w-64 md:h-64 object-contain filter drop-shadow-[0_0_40px_rgba(255,255,255,0.5)]"
-            referrerPolicy="no-referrer"
-          />
+            />
         </div>
       </motion.div>
 

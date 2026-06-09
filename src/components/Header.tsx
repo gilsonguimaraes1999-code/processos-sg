@@ -46,10 +46,9 @@ export default function Header({
     <header className="sticky top-0 z-40 w-full px-6 py-4 flex items-center justify-between backdrop-blur-xl border-b border-black/5 dark:border-white/10 bg-white/80 dark:bg-bg-dark/80">
       <div className="flex items-center gap-4 shrink-0">
         <img 
-          src="https://i.ibb.co/69s087d/image.png" 
+          src="/logo.png" 
           alt="Nexus" 
           className="w-12 h-12 object-contain filter drop-shadow-[0_0_10px_rgba(255,255,255,0.4)]"
-          referrerPolicy="no-referrer"
         />
         <div>
           <h1 className="text-2xl font-black tracking-tighter text-slate-900 dark:text-white uppercase leading-tight font-sans">

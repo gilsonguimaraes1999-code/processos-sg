@@ -1,0 +1,34 @@
+ALTERAÇÕES DA LOGO APLICADA
+
+Logo usada:
+https://i.ibb.co/69s087d/image.png
+
+Onde foi aplicada:
+1. /public/logo.png
+   - Arquivo principal da logo salvo dentro do site.
+
+2. /src/components/Header.tsx
+   - Logo do cabeçalho/topo do site.
+   - Alterado de URL externa para /logo.png.
+
+3. /src/components/ThreeDLogo.tsx
+   - Logo da tela de login.
+   - Alterado de URL externa para /logo.png.
+
+4. /public/favicon.ico
+5. /public/favicon-16x16.png
+6. /public/favicon-32x32.png
+7. /public/favicon-48x48.png
+8. /public/favicon-192x192.png
+9. /public/favicon-512x512.png
+10. /public/apple-touch-icon.png
+    - Ícones da aba do navegador, favoritos, celular e instalação como app.
+
+11. /index.html
+    - Links do favicon e apple-touch-icon atualizados para a nova logo.
+
+12. /public/site.webmanifest
+    - Manifest atualizado para usar os ícones PNG da nova logo.
+
+OBSERVAÇÃO:
+Depois de subir no GitHub e fazer redeploy no Vercel, talvez o navegador ainda mostre o ícone antigo por cache. Use CTRL + F5 ou abra em aba anônima.
